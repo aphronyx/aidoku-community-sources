@@ -4,7 +4,12 @@ extern crate alloc;
 
 mod helper;
 
-use aidoku::{error::Result, prelude::get_manga_list, std::Vec, Filter, Manga, MangaPageResult};
+use aidoku::{
+	error::Result,
+	prelude::{get_manga_details, get_manga_list},
+	std::{String, Vec},
+	Filter, Manga, MangaPageResult, MangaStatus, MangaViewer,
+};
 use alloc::string::ToString as _;
 use helper::url::Url;
 
@@ -49,4 +54,70 @@ fn get_manga_list(filters: Vec<Filter>, page: i32) -> Result<MangaPageResult> {
 	let has_more = !data.get("isEnd").as_bool()?;
 
 	Ok(MangaPageResult { manga, has_more })
+}
+
+#[expect(clippy::needless_pass_by_value)]
+#[get_manga_details]
+fn get_manga_details(id: String) -> Result<Manga> {
+	let url = Url::Manga { id: &id };
+
+	let manga_page = url.get().html()?;
+	let cover = manga_page.select("div.mg-cover mip-img").attr("src").read();
+
+	let title = manga_page.select("h2.mg-title").text().read();
+
+	let author = manga_page
+		.select("p.mg-sub-title a")
+		.array()
+		.filter_map(|val| {
+			let author = val.as_node().ok()?.text().read();
+
+			Some(author)
+		})
+		.collect::<Vec<_>>()
+		.join("、");
+
+	let description = manga_page
+		.select("div.manga-introduction mip-showmore")
+		.text()
+		.read();
+
+	let mut viewer = MangaViewer::default();
+	let categories = manga_page
+		.select("p.mg-cate a")
+		.array()
+		.filter_map(|val| {
+			let genre = val.as_node().ok()?.text().read();
+
+			if genre == "长条" {
+				viewer = MangaViewer::Scroll;
+			}
+
+			Some(genre)
+		})
+		.collect();
+
+	let status = match manga_page
+		.select("div.ongoing-status")
+		.text()
+		.read()
+		.as_str()
+	{
+		"连载中" => MangaStatus::Ongoing,
+		"已完结" => MangaStatus::Completed,
+		_ => MangaStatus::Unknown,
+	};
+
+	Ok(Manga {
+		id: id.clone(),
+		cover,
+		title,
+		author,
+		description,
+		url: url.into(),
+		categories,
+		status,
+		viewer,
+		..Default::default()
+	})
 }
