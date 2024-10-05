@@ -9,13 +9,17 @@ use aidoku::{
 	helpers::substring::Substring as _,
 	prelude::{
 		format, get_chapter_list, get_manga_details, get_manga_list, get_manga_listing,
-		handle_notification, initialize,
+		get_page_list, handle_notification, initialize, modify_image_request,
 	},
-	std::{String, Vec},
+	std::{net::Request, String, Vec},
 	Chapter, Filter, Listing, Manga, MangaContentRating, MangaPageResult, MangaStatus, MangaViewer,
+	Page,
 };
 use alloc::string::ToString as _;
-use helper::{setting::change_rate_limit, to_aidoku_error, url::Url, MangaListPage as _};
+use helper::{
+	image::REQUIRES_SIGN_IN, setting::change_rate_limit, to_aidoku_error, url::Url,
+	MangaListPage as _,
+};
 
 #[initialize]
 fn initialize() {
@@ -150,6 +154,47 @@ fn get_chapter_list(manga_id: String) -> Result<Vec<Chapter>> {
 	}
 
 	Ok(chapters)
+}
+
+#[get_page_list]
+fn get_page_list(manga_id: String, chapter_id: String) -> Result<Vec<Page>> {
+	let chapter_page = Url::chapter(manga_id, chapter_id).html()?;
+	let mut pages = chapter_page
+		.select("img[data-src]")
+		.array()
+		.enumerate()
+		.map(|(i, val)| {
+			let index = i.try_into().map_err(to_aidoku_error)?;
+
+			let url = val.as_node()?.attr("data-src").read();
+
+			Ok(Page {
+				index,
+				url,
+				..Default::default()
+			})
+		})
+		.collect::<Result<Vec<_>>>()?;
+
+	let requires_sign_in = !chapter_page.select("div.article-login").array().is_empty();
+	if requires_sign_in {
+		let index = pages.len().try_into().map_err(to_aidoku_error)?;
+
+		let base64 = REQUIRES_SIGN_IN.into();
+
+		pages.push(Page {
+			index,
+			base64,
+			..Default::default()
+		});
+	}
+
+	Ok(pages)
+}
+
+#[modify_image_request]
+fn modify_image_request(request: Request) {
+	request.header("Referer", Url::Domain.into());
 }
 
 #[expect(clippy::needless_pass_by_value)]

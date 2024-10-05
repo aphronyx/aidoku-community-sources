@@ -10,7 +10,7 @@ use core::fmt::{Display, Formatter, Result as FmtResult};
 use strum::{Display, FromRepr, IntoStaticStr};
 
 #[expect(private_interfaces)]
-#[derive(Display)]
+#[derive(Display, IntoStaticStr)]
 #[strum(prefix = "https://yandanshe.com")]
 pub enum Url {
 	#[strum(to_string = "/{genre}{status}/page/{page}/?{query}")]
@@ -35,6 +35,9 @@ pub enum Url {
 		manga_id: String,
 		chapter_id: String,
 	},
+
+	#[strum(to_string = "")]
+	Domain,
 }
 
 impl Url {
