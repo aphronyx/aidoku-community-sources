@@ -17,8 +17,8 @@ fn initialize() {
 
 #[get_manga_list]
 fn get_manga_list(filters: Vec<Filter>, page: i32) -> Result<MangaPageResult> {
-	let filters_page = Url::from((filters, page)).html()?;
-	let manga = filters_page
+	let manga_list_page = Url::from((filters, page)).html()?;
+	let manga = manga_list_page
 		.select("article.item")
 		.array()
 		.map(|val| {
@@ -58,7 +58,7 @@ fn get_manga_list(filters: Vec<Filter>, page: i32) -> Result<MangaPageResult> {
 		})
 		.collect::<Result<_>>()?;
 
-	let has_more = !filters_page.select("li.next-page a").array().is_empty();
+	let has_more = !manga_list_page.select("li.next-page a").array().is_empty();
 
 	Ok(MangaPageResult { manga, has_more })
 }

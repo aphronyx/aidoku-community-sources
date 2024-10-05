@@ -22,6 +22,9 @@ pub enum Url {
 		page: i32,
 		query: FiltersQuery,
 	},
+
+	#[strum(to_string = "/page/{page}/?{query}")]
+	Search { page: i32, query: SearchQuery },
 }
 
 impl Url {
@@ -52,6 +55,12 @@ impl Url {
 			page,
 			query,
 		}
+	}
+
+	const fn search(keyword: String, page: i32) -> Self {
+		let query = SearchQuery::new(keyword);
+
+		Self::Search { page, query }
 	}
 }
 
@@ -103,6 +112,15 @@ impl From<(Vec<Filter>, i32)> for Url {
 							Sort::from_repr(i)
 						})
 						.unwrap_or_default();
+				}
+
+				FilterType::Title => {
+					let keyword = match filter.value.as_string() {
+						Ok(str_ref) => str_ref.read(),
+						Err(_) => continue,
+					};
+
+					return Self::search(keyword, page);
 				}
 
 				FilterType::Genre => {
@@ -193,6 +211,25 @@ impl Display for FiltersQuery {
 
 		let sort_by = (!matches!(self.sort_by, Sort::LastUpdated)).then(|| self.sort_by.into());
 		query.push_encoded("sort", sort_by);
+
+		write!(f, "{query}")
+	}
+}
+
+struct SearchQuery {
+	keyword: String,
+}
+
+impl SearchQuery {
+	const fn new(keyword: String) -> Self {
+		Self { keyword }
+	}
+}
+
+impl Display for SearchQuery {
+	fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+		let mut query = QueryParameters::new();
+		query.push("s", Some(&self.keyword));
 
 		write!(f, "{query}")
 	}
