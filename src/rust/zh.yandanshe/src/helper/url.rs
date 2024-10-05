@@ -1,5 +1,3 @@
-extern crate alloc;
-
 use aidoku::{
 	error::{AidokuError, NodeError, Result},
 	helpers::uri::{encode_uri_component, QueryParameters},
@@ -31,6 +29,12 @@ pub enum Url {
 
 	#[strum(to_string = "/{id}/")]
 	Manga { id: String },
+
+	#[strum(to_string = "/{manga_id}/{chapter_id}/")]
+	Chapter {
+		manga_id: String,
+		chapter_id: String,
+	},
 }
 
 impl Url {
@@ -58,6 +62,13 @@ impl Url {
 	pub fn manga<S: AsRef<str>>(id: S) -> Self {
 		Self::Manga {
 			id: id.as_ref().into(),
+		}
+	}
+
+	pub fn chapter<M: AsRef<str>, C: AsRef<str>>(manga_id: M, chapter_id: C) -> Self {
+		Self::Chapter {
+			manga_id: manga_id.as_ref().into(),
+			chapter_id: chapter_id.as_ref().into(),
 		}
 	}
 

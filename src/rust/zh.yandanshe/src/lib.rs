@@ -1,17 +1,20 @@
 #![no_std]
 
+extern crate alloc;
+
 mod helper;
 
 use aidoku::{
 	error::Result,
 	helpers::substring::Substring as _,
 	prelude::{
-		format, get_manga_details, get_manga_list, get_manga_listing, handle_notification,
-		initialize,
+		format, get_chapter_list, get_manga_details, get_manga_list, get_manga_listing,
+		handle_notification, initialize,
 	},
 	std::{String, Vec},
-	Filter, Listing, Manga, MangaContentRating, MangaPageResult, MangaStatus, MangaViewer,
+	Chapter, Filter, Listing, Manga, MangaContentRating, MangaPageResult, MangaStatus, MangaViewer,
 };
+use alloc::string::ToString as _;
 use helper::{setting::change_rate_limit, to_aidoku_error, url::Url, MangaListPage as _};
 
 #[initialize]
@@ -107,6 +110,46 @@ fn get_manga_details(id: String) -> Result<Manga> {
 		viewer,
 		..Default::default()
 	})
+}
+
+#[expect(clippy::needless_pass_by_value)]
+#[get_chapter_list]
+fn get_chapter_list(manga_id: String) -> Result<Vec<Chapter>> {
+	let manga_page = Url::manga(&manga_id).html()?;
+	let chapters_len = match manga_page.select(".post-page-numbers").array().len() {
+		0 => 1,
+		len => len,
+	};
+	let mut chapters = (1..=chapters_len)
+		.map(|n| {
+			let id = n.to_string();
+
+			#[expect(clippy::cast_precision_loss, clippy::as_conversions)]
+			let chapter = n as _;
+
+			let url = Url::chapter(&manga_id, &id).into();
+
+			let lang = "zh".into();
+
+			Chapter {
+				id,
+				chapter,
+				url,
+				lang,
+				..Default::default()
+			}
+		})
+		.rev()
+		.collect::<Vec<_>>();
+	if let Some(last_chapter) = chapters.first_mut() {
+		last_chapter.date_updated =
+			manga_page
+				.select("span.item-time")
+				.text()
+				.as_date("yyyy-MM-dd", None, None);
+	}
+
+	Ok(chapters)
 }
 
 #[expect(clippy::needless_pass_by_value)]
