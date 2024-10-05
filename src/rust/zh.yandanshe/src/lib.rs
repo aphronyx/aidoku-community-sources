@@ -9,17 +9,18 @@ use aidoku::{
 	helpers::substring::Substring as _,
 	prelude::{
 		format, get_chapter_list, get_manga_details, get_manga_list, get_manga_listing,
-		get_page_list, handle_notification, initialize, modify_image_request,
+		get_page_list, handle_notification, handle_url, initialize, modify_image_request,
 	},
 	std::{net::Request, String, Vec},
-	Chapter, Filter, Listing, Manga, MangaContentRating, MangaPageResult, MangaStatus, MangaViewer,
-	Page,
+	Chapter, DeepLink, Filter, Listing, Manga, MangaContentRating, MangaPageResult, MangaStatus,
+	MangaViewer, Page,
 };
 use alloc::string::ToString as _;
 use helper::{
 	image::REQUIRES_SIGN_IN, setting::change_rate_limit, to_aidoku_error, url::Url,
 	MangaListPage as _,
 };
+use regex::Regex;
 
 #[initialize]
 fn initialize() {
@@ -195,6 +196,38 @@ fn get_page_list(manga_id: String, chapter_id: String) -> Result<Vec<Page>> {
 #[modify_image_request]
 fn modify_image_request(request: Request) {
 	request.header("Referer", Url::Domain.into());
+}
+
+#[expect(clippy::needless_pass_by_value)]
+#[handle_url]
+fn handle_url(url: String) -> Result<DeepLink> {
+	let Some(caps) =
+		Regex::new(r"^https:\/\/[^/]+\/(?<manga_id>\d+)\/(?<chapter_id>(\d+\/|\?start))?$")
+			.map_err(to_aidoku_error)?
+			.captures(&url)
+	else {
+		return Ok(DeepLink::default());
+	};
+	let manga = {
+		let id = caps["manga_id"].into();
+		let manga = get_manga_details(id)?;
+
+		Some(manga)
+	};
+
+	let chapter = caps.name("chapter_id").map(|m| {
+		let id = match m.as_str() {
+			"?start" => "1".into(),
+			id => id.replace('/', ""),
+		};
+
+		Chapter {
+			id,
+			..Default::default()
+		}
+	});
+
+	Ok(DeepLink { manga, chapter })
 }
 
 #[expect(clippy::needless_pass_by_value)]
