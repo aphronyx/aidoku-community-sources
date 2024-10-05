@@ -1,0 +1,15 @@
+[
+	{
+		"type": "group",
+		"title": "速率限制",
+		"items": [
+			{
+				"type": "stepper",
+				"key": "requests",
+				"title": "請求次數",
+				"notification": "changeRequests",
+				"default": 5
+			}
+		]
+	}
+]
