@@ -4,11 +4,11 @@ mod helper;
 
 use aidoku::{
 	error::Result,
-	prelude::{get_manga_list, handle_notification, initialize},
+	prelude::{format, get_manga_list, get_manga_listing, handle_notification, initialize},
 	std::{String, Vec},
-	Filter, Manga, MangaContentRating, MangaPageResult, MangaStatus,
+	Filter, Listing, MangaPageResult,
 };
-use helper::{setting::change_rate_limit, url::Url};
+use helper::{setting::change_rate_limit, to_aidoku_error, url::Url, MangaListPage as _};
 
 #[initialize]
 fn initialize() {
@@ -17,50 +17,19 @@ fn initialize() {
 
 #[get_manga_list]
 fn get_manga_list(filters: Vec<Filter>, page: i32) -> Result<MangaPageResult> {
-	let manga_list_page = Url::from((filters, page)).html()?;
-	let manga = manga_list_page
-		.select("article.item")
-		.array()
-		.map(|val| {
-			let item = val.as_node()?;
-			let url = item.select("a").attr("href").read();
+	Url::from((filters, page)).html()?.get_manga_page_result()
+}
 
-			let id = url.replace(|c: char| !c.is_ascii_digit(), "");
+#[expect(clippy::needless_pass_by_value)]
+#[get_manga_listing]
+fn get_manga_listing(listing: Listing, page: i32) -> Result<MangaPageResult> {
+	if listing.name != "首頁" {
+		let msg = format!("Listing unimplemented: {}", listing.name);
 
-			let cover = item.select("img").attr("src").read();
+		return Err(to_aidoku_error(msg));
+	}
 
-			let title = item.select("h3").text().read();
-
-			let categories = if item.select("span.label").text().read() == "會員" {
-				["會員專區".into()].into()
-			} else {
-				[].into()
-			};
-
-			let status = if item.select("footer").text().read().starts_with('全') {
-				MangaStatus::Completed
-			} else {
-				MangaStatus::Ongoing
-			};
-
-			let nsfw = MangaContentRating::Nsfw;
-
-			Ok(Manga {
-				id,
-				cover,
-				title,
-				url,
-				categories,
-				status,
-				nsfw,
-				..Default::default()
-			})
-		})
-		.collect::<Result<_>>()?;
-
-	let has_more = !manga_list_page.select("li.next-page a").array().is_empty();
-
-	Ok(MangaPageResult { manga, has_more })
+	Url::home(page).html()?.get_manga_page_result()
 }
 
 #[expect(clippy::needless_pass_by_value)]

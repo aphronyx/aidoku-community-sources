@@ -25,9 +25,16 @@ pub enum Url {
 
 	#[strum(to_string = "/page/{page}/?{query}")]
 	Search { page: i32, query: SearchQuery },
+
+	#[strum(to_string = "/page/{page}/")]
+	Home { page: i32 },
 }
 
 impl Url {
+	pub const fn home(page: i32) -> Self {
+		Self::Home { page }
+	}
+
 	pub fn html(self) -> Result<Node> {
 		let html = Request::get(self.to_string()).html()?;
 
