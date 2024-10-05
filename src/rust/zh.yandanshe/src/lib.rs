@@ -16,7 +16,8 @@ fn initialize() {
 #[expect(clippy::needless_pass_by_value)]
 #[handle_notification]
 fn handle_notification(notification: String) {
-	if notification.as_str() == "changeRequests" {
-		change_rate_limit();
+	match notification.as_str() {
+		"changeRequests" | "changePeriod" => change_rate_limit(),
+		_ => (),
 	}
 }

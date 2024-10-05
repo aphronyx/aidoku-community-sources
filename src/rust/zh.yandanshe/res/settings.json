@@ -9,6 +9,13 @@
 				"title": "請求次數",
 				"notification": "changeRequests",
 				"default": 5
+			},
+			{
+				"type": "stepper",
+				"key": "period",
+				"title": "限制時間（秒）",
+				"notification": "changePeriod",
+				"default": 5
 			}
 		]
 	}
