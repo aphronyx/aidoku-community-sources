@@ -1,0 +1,50 @@
+[
+	{ "type": "select", "name": "類型", "options": ["耽美", "女性向"] },
+	{ "type": "select", "name": "連載情形", "options": ["完結", "連載"] },
+	{
+		"type": "group",
+		"name": "標籤",
+		"filters": [
+			{
+				"type": "select",
+				"name": "模式",
+				"options": ["且（AND）", "或（OR）"]
+			},
+			{ "type": "genre", "name": "韓漫" },
+			{ "type": "genre", "name": "ABO" },
+			{ "type": "genre", "name": "幻想" },
+			{ "type": "genre", "name": "校園" },
+			{ "type": "genre", "name": "辦公室戀情" },
+			{ "type": "genre", "name": "職場" },
+			{ "type": "genre", "name": "娛樂圈" },
+			{ "type": "genre", "name": "偶像" },
+			{ "type": "genre", "name": "禁斷·背德" },
+			{ "type": "genre", "name": "近親" },
+			{ "type": "genre", "name": "兄弟" },
+			{ "type": "genre", "name": "父子" },
+			{ "type": "genre", "name": "近親相姦" },
+			{ "type": "genre", "name": "義兄弟" },
+			{ "type": "genre", "name": "強制" },
+			{ "type": "genre", "name": "3P" },
+			{ "type": "genre", "name": "NP" },
+			{ "type": "genre", "name": "調教" },
+			{ "type": "genre", "name": "凌辱" },
+			{ "type": "genre", "name": "獸人" },
+			{ "type": "genre", "name": "獸耳" },
+			{ "type": "genre", "name": "異世界" },
+			{ "type": "genre", "name": "異種族" },
+			{ "type": "genre", "name": "台漫" },
+			{ "type": "genre", "name": "亂倫" },
+			{ "type": "genre", "name": "兄妹" },
+			{ "type": "genre", "name": "姊弟" },
+			{ "type": "genre", "name": "女攻男受" },
+			{ "type": "genre", "name": "第四愛" }
+		]
+	},
+	{
+		"type": "sort",
+		"name": "排序依據",
+		"options": ["熱度", "時間"],
+		"default": { "index": 1 }
+	}
+]
