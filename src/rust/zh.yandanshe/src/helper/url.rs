@@ -28,6 +28,9 @@ pub enum Url {
 
 	#[strum(to_string = "/page/{page}/")]
 	Home { page: i32 },
+
+	#[strum(to_string = "/{id}/")]
+	Manga { id: String },
 }
 
 impl Url {
@@ -35,7 +38,7 @@ impl Url {
 		Self::Home { page }
 	}
 
-	pub fn html(self) -> Result<Node> {
+	pub fn html(&self) -> Result<Node> {
 		let html = Request::get(self.to_string()).html()?;
 
 		let is_blocked = html.select("title").text().read() == "您已被臨時封鎖";
@@ -44,6 +47,18 @@ impl Url {
 		}
 
 		Ok(html)
+	}
+
+	pub fn search<S: AsRef<str>>(keyword: S, page: i32) -> Self {
+		let query = SearchQuery::new(keyword.as_ref().into());
+
+		Self::Search { page, query }
+	}
+
+	pub fn manga<S: AsRef<str>>(id: S) -> Self {
+		Self::Manga {
+			id: id.as_ref().into(),
+		}
 	}
 
 	const fn filters(
@@ -62,12 +77,6 @@ impl Url {
 			page,
 			query,
 		}
-	}
-
-	const fn search(keyword: String, page: i32) -> Self {
-		let query = SearchQuery::new(keyword);
-
-		Self::Search { page, query }
 	}
 }
 
@@ -144,6 +153,12 @@ impl From<(Vec<Filter>, i32)> for Url {
 		}
 
 		Self::filters(genre, status, tags, mode, sort_by, page)
+	}
+}
+
+impl From<Url> for String {
+	fn from(url: Url) -> Self {
+		url.to_string()
 	}
 }
 
