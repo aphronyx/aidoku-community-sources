@@ -1,0 +1,17 @@
+[
+	{
+		"type": "group",
+		"title": "我的專區",
+		"items": [
+			{
+				"type": "login",
+				"method": "web",
+				"key": "login",
+				"title": "登入",
+				"url": "https://www.bomtoon.tw/user/login",
+				"logoutTitle": "登出",
+				"clearCookiesOnLogOut": true
+			}
+		]
+	}
+]
