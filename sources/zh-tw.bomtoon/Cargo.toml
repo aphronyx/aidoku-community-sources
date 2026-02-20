@@ -1,0 +1,19 @@
+[package]
+name = "bomtoon"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+aidoku = { git = "https://github.com/Aidoku/aidoku-rs.git", version = "0.3.0" }
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+opt-level = "s"
+strip = true
+lto = true
+panic = "abort"

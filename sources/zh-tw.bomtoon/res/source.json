@@ -1,0 +1,10 @@
+{
+	"info": {
+		"id": "zh-tw.bomtoon",
+		"name": "BOMTOON",
+		"version": 1,
+		"url": "https://www.bomtoon.tw",
+		"contentRating": 2,
+		"languages": ["zh-TW"]
+	}
+}
