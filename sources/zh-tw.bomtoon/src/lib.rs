@@ -5,20 +5,26 @@ mod response;
 
 use {
 	aidoku::{
-		Chapter, FilterValue, HashMap, Manga, MangaPageResult, Page, Result, Source,
+		AidokuError, Chapter, FilterValue, HashMap, Manga, MangaPageResult, Page, Result, Source,
 		WebLoginHandler,
 		alloc::{String, Vec, format},
 		bail, register_source,
 	},
+	arrayvec::ArrayString,
+	core::cell::Cell,
 	net::Url,
 	response::Session,
 };
 
-struct Bomtoon;
+struct Bomtoon {
+	next_pagination: Cell<ArrayString<31>>,
+}
 
 impl Source for Bomtoon {
 	fn new() -> Self {
-		Self
+		Self {
+			next_pagination: Cell::new(ArrayString::new_const()),
+		}
 	}
 
 	fn get_search_manga_list(
@@ -27,6 +33,25 @@ impl Source for Bomtoon {
 		page: i32,
 		filters: Vec<FilterValue>,
 	) -> Result<MangaPageResult> {
+		#[expect(clippy::shadow_reuse, reason = "guarded")]
+		let url = if let Some(query) = query.as_deref() {
+			use net::search::{SortBy, Type};
+
+			let (r#type, search_text) = query
+				.strip_prefix('#')
+				.map_or((Type::All, query), |tag| (Type::Tag, tag));
+
+			let index = page
+				.saturating_sub(1)
+				.try_into()
+				.map_err(AidokuError::message)?;
+
+			let next_pagination = (index != 0).then(|| self.next_pagination.get());
+
+			Url::search(r#type, search_text, index, next_pagination, SortBy::Popular)
+		} else {
+			todo!()
+		};
 		todo!()
 	}
 
