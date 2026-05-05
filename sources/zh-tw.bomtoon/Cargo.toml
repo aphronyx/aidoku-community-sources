@@ -9,6 +9,7 @@ crate-type = ["cdylib"]
 [dependencies]
 aidoku = { git = "https://github.com/Aidoku/aidoku-rs.git", version = "0.3.0", features = ["json"] }
 arrayvec = { version = "0.7.8", default-features = false, features = ["serde"] }
+itoa = "1.0.18"
 serde = { version = "1.0.229", default-features = false }
 strum = { version = "0.28.0", default-features = false, features = ["derive"] }
 
