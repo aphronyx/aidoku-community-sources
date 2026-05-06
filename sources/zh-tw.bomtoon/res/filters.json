@@ -1,0 +1,56 @@
+[
+	{
+		"type": "multi-select",
+		"title": "類型",
+		"options": [
+			"BL",
+			"GL",
+			"愛情",
+			"奇幻",
+			"劇情",
+			"爆笑",
+			"多故事線",
+			"動作·體育",
+			"恐怖·驚悚"
+		],
+		"ids": [
+			"6|GROUP_GENRE_BL",
+			"13|GROUP_GENRE_GL",
+			"5|GROUP_GENRE_ROMANCE",
+			"7|GROUP_GENRE_FANTASY",
+			"8|GROUP_GENRE_DRAMA",
+			"9|GROUP_GENRE_GAG",
+			"10|GROUP_GENRE_OMNIBUS",
+			"11|GROUP_GENRE_ACTION_SPORTS",
+			"12|GROUP_GENRE_HORROR_THRILLER"
+		],
+		"usesTagStyle": true
+	},
+	{
+		"type": "sort",
+		"title": "排行",
+		"options": ["即時", "週間", "月間", "整體"],
+		"canAscend": false
+	},
+	{
+		"type": "check",
+		"id": "WorldDrop",
+		"name": "WorldDrop",
+		"hideFromHeader": true
+	},
+	{
+		"type": "multi-select",
+		"title": "進度",
+		"options": ["完結", "連載"],
+		"hideFromHeader": true,
+		"usesTagStyle": true
+	},
+	{
+		"type": "multi-select",
+		"title": "優惠",
+		"options": ["免費漫漫看", "免費&優惠"],
+		"ids": ["FREETIME", "FREE"],
+		"hideFromHeader": true,
+		"usesTagStyle": true
+	}
+]

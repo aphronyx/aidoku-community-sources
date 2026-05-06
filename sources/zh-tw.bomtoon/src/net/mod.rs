@@ -1,15 +1,16 @@
+pub mod ranking;
 pub mod search;
 
 use {
 	aidoku::{
 		AidokuError,
-		alloc::{String, collections::BTreeSet, fmt::Write as _},
+		alloc::{String, Vec, collections::BTreeSet, fmt::Write as _},
 		helpers::uri::QueryParameters,
 		imports::net::Request,
-		serde::Serialize,
+		serde::{Serialize, Serializer},
 	},
 	arrayvec::ArrayString,
-	strum::EnumIs,
+	strum::{AsRefStr, EnumIs},
 };
 
 #[derive(EnumIs, Serialize)]
@@ -28,10 +29,36 @@ pub enum Url<'a> {
 		#[serde(skip_serializing_if = "Option::is_none")]
 		next_pagination: Option<ArrayString<31>>,
 		is_check_device: bool,
-		#[serde(serialize_with = "search::thumbnail_types")]
-		contents_thumbnail_type: BTreeSet<search::ThumbnailType>,
+		#[serde(serialize_with = "comma_join")]
+		contents_thumbnail_type: BTreeSet<ThumbnailType>,
 		search_method: search::Method,
 		sort: search::SortBy,
+	},
+	#[serde(rename_all = "camelCase")]
+	Ranking {
+		adult_toggle: bool,
+		#[serde(serialize_with = "comma_join")]
+		contents_thumbnail_type: BTreeSet<ThumbnailType>,
+		ranking_type: ranking::Type,
+		#[serde(skip_serializing_if = "Option::is_none")]
+		is_global_release: Option<bool>,
+		#[serde(skip_serializing_if = "Option::is_none")]
+		badge_complete: Option<bool>,
+		#[serde(
+			skip_serializing_if = "Option::is_none",
+			serialize_with = "option_comma_join"
+		)]
+		contents_free_filter: Option<BTreeSet<&'a str>>,
+		#[serde(
+			skip_serializing_if = "Option::is_none",
+			serialize_with = "option_comma_join"
+		)]
+		genres: Option<BTreeSet<&'a str>>,
+		#[serde(
+			skip_serializing_if = "Option::is_none",
+			serialize_with = "option_comma_join"
+		)]
+		genres_internal_name: Option<BTreeSet<&'a str>>,
 	},
 }
 
@@ -50,6 +77,14 @@ impl Url<'_> {
 				let query = QueryParameters::from_data(self)?;
 				write!(url, "/api/balcony-api-v2/search/{type}?{query}")
 					.map_err(AidokuError::message)?;
+			}
+			Self::Ranking { .. } => {
+				let query = QueryParameters::from_data(self)?;
+				write!(
+					url,
+					"/api/balcony-api-v2/contents/tab/ranking/comic?{query}"
+				)
+				.map_err(AidokuError::message)?;
 			}
 		}
 		Ok(url)
@@ -72,9 +107,64 @@ impl<'a> Url<'a> {
 			size: 50,
 			next_pagination,
 			is_check_device: true,
-			contents_thumbnail_type: BTreeSet::from_iter([search::ThumbnailType::Detail]),
+			contents_thumbnail_type: BTreeSet::from_iter([ThumbnailType::Vertical]),
 			search_method: search::Method::Input,
 			sort,
 		}
 	}
+
+	pub fn ranking(
+		ranking_type: ranking::Type,
+		is_global_release: bool,
+		badge_complete: Option<bool>,
+		contents_free_filter: Option<BTreeSet<&'a str>>,
+		genres: Option<BTreeSet<&'a str>>,
+		genres_internal_name: Option<BTreeSet<&'a str>>,
+	) -> Self {
+		Self::Ranking {
+			adult_toggle: true,
+			contents_thumbnail_type: BTreeSet::from_iter([ThumbnailType::Vertical]),
+			ranking_type,
+			is_global_release: is_global_release.then_some(true),
+			badge_complete,
+			contents_free_filter,
+			genres,
+			genres_internal_name,
+		}
+	}
+}
+
+#[derive(AsRefStr, PartialEq, Eq, PartialOrd, Ord)]
+#[strum(serialize_all = "SCREAMING_SNAKE_CASE")]
+pub enum ThumbnailType {
+	Vertical,
+	// Main,
+	// Square,
+	// Detail,
+	// HorizontalTypeA,
+	// DetailNonAdult,
+}
+
+fn comma_join<T: AsRef<str>, S: Serializer>(
+	items: &BTreeSet<T>,
+	serializer: S,
+) -> Result<S::Ok, S::Error> {
+	items
+		.iter()
+		.map(AsRef::as_ref)
+		.collect::<Vec<_>>()
+		.join(",")
+		.serialize(serializer)
+}
+
+#[expect(clippy::ref_option, reason = "required by `serialize_with`")]
+fn option_comma_join<T: AsRef<str>, S: Serializer>(
+	items: &Option<BTreeSet<T>>,
+	serializer: S,
+) -> Result<S::Ok, S::Error> {
+	#[expect(clippy::shadow_reuse, reason = "guarded")]
+	let Some(items) = items.as_ref() else {
+		return serializer.serialize_none();
+	};
+	comma_join(items, serializer)
 }
