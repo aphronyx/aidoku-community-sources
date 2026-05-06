@@ -13,7 +13,7 @@ use {
 	arrayvec::ArrayString,
 	core::cell::Cell,
 	net::Url,
-	response::{Search, Session},
+	response::{Ranking, Search, Session},
 };
 
 struct Bomtoon {
@@ -110,14 +110,15 @@ impl Source for Bomtoon {
 			)
 		};
 		let mut res = url.request()?.send()?;
-		if url.is_search() {
+		let result = if url.is_search() {
 			let search = res.get_json::<Search>()?;
 			self.next_pagination.set(search.next_pagination());
 
-			Ok(search.manga_page_result())
+			search.manga_page_result()
 		} else {
-			todo!()
-		}
+			res.get_json::<Ranking>()?.manga_page_result()
+		};
+		Ok(result)
 	}
 
 	fn get_manga_update(
