@@ -1,5 +1,5 @@
 use {
-	crate::net::Url,
+	super::MangaItem,
 	aidoku::{
 		ContentRating, Manga, MangaPageResult, MangaStatus, Viewer,
 		alloc::{Vec, borrow::Cow},
@@ -48,65 +48,36 @@ impl Data<'_> {
 
 #[derive(Deserialize)]
 struct Content<'a> {
-	alias: &'a str,
-	title: &'a str,
-	thumbnails: [Thumbnail<'a>; 1],
+	#[serde(flatten, borrow)]
+	manga_item: MangaItem<'a>,
 	tag: Cow<'a, str>,
-	creators: &'a str,
 }
 
 impl Content<'_> {
 	fn to_manga(&self) -> Manga {
-		let key = self.alias.into();
-
-		let title = self.title.into();
-
-		let cover = self.thumbnails[0].image_path.into();
-
-		let authors = self
-			.creators
-			.split(',')
-			.map(|creator| creator.trim().into())
-			.collect();
-
-		let url = Url::Manga { key: self.alias }.to_string().ok();
+		let mut manga = self.manga_item.to_manga();
 
 		let tags = self.tag.split(',').map(Into::into).collect::<Vec<_>>();
-		let status = if tags.iter().any(|tag| tag == "完結") {
+		manga.status = if tags.iter().any(|tag| tag == "完結") {
 			MangaStatus::Completed
 		} else {
 			MangaStatus::Ongoing
 		};
 
-		let content_rating = if tags.iter().any(|tag| tag == "清水") {
+		manga.content_rating = if tags.iter().any(|tag| tag == "清水") {
 			ContentRating::Safe
 		} else {
 			ContentRating::NSFW
 		};
 
-		let viewer = if tags.iter().any(|tag| tag == "翻頁式漫畫") {
+		manga.viewer = if tags.iter().any(|tag| tag == "翻頁式漫畫") {
 			Viewer::Unknown
 		} else {
 			Viewer::Webtoon
 		};
 
-		Manga {
-			key,
-			title,
-			cover: Some(cover),
-			authors: Some(authors),
-			url,
-			tags: Some(tags),
-			status,
-			content_rating,
-			viewer,
-			..Default::default()
-		}
-	}
-}
+		manga.tags = Some(tags);
 
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct Thumbnail<'a> {
-	image_path: &'a str,
+		manga
+	}
 }
