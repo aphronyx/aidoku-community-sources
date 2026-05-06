@@ -1,5 +1,6 @@
 #![expect(clippy::pub_use, reason = "cleaner")]
 
+mod search;
 mod session;
 
-pub use session::Root as Session;
+pub use {search::Root as Search, session::Root as Session};

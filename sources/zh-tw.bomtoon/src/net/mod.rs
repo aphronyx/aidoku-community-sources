@@ -60,16 +60,13 @@ pub enum Url<'a> {
 		)]
 		genres_internal_name: Option<BTreeSet<&'a str>>,
 	},
+	Manga {
+		key: &'a str,
+	},
 }
 
 impl Url<'_> {
-	pub fn request(&self) -> aidoku::Result<Request> {
-		let url = self.to_string()?;
-		let request = Request::get(url)?;
-		Ok(request)
-	}
-
-	fn to_string(&self) -> aidoku::Result<String> {
+	pub fn to_string(&self) -> aidoku::Result<String> {
 		let mut url = String::from("https://www.bomtoon.tw");
 		match *self {
 			Self::Session => url.push_str("/api/auth/session"),
@@ -86,8 +83,20 @@ impl Url<'_> {
 				)
 				.map_err(AidokuError::message)?;
 			}
+			Self::Manga { key } => write!(url, "/detail/{key}").map_err(AidokuError::message)?,
 		}
 		Ok(url)
+	}
+
+	pub fn request(&self) -> aidoku::Result<Request> {
+		let url = self.to_string()?;
+		let mut request = Request::get(url)?;
+
+		if self.is_search() || self.is_ranking() {
+			request.set_header("x-balcony-id", "BOMTOON_TW");
+		}
+
+		Ok(request)
 	}
 }
 
