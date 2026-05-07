@@ -2,12 +2,14 @@ pub mod ranking;
 pub mod search;
 
 use {
+	crate::response::AccessToken,
 	aidoku::{
 		AidokuError,
 		alloc::{String, Vec, collections::BTreeSet, fmt::Write as _},
+		error,
 		helpers::uri::QueryParameters,
-		imports::net::Request,
-		serde::{Serialize, Serializer},
+		imports::{defaults::defaults_get, net::Request},
+		serde::{Deserialize, Serialize, Serializer},
 	},
 	arrayvec::ArrayString,
 	strum::{AsRefStr, EnumIs},
@@ -16,6 +18,7 @@ use {
 #[derive(EnumIs, Serialize)]
 #[serde(untagged)]
 pub enum Url<'a> {
+	Base,
 	Session,
 	#[serde(rename_all = "camelCase")]
 	Search {
@@ -60,8 +63,16 @@ pub enum Url<'a> {
 		)]
 		genres_internal_name: Option<BTreeSet<&'a str>>,
 	},
-	Manga {
+	MangaPage {
 		key: &'a str,
+	},
+	#[serde(rename_all = "camelCase")]
+	Manga {
+		#[serde(skip)]
+		key: &'a str,
+
+		is_not_login_adult: bool,
+		is_porch: bool,
 	},
 }
 
@@ -69,6 +80,7 @@ impl Url<'_> {
 	pub fn to_string(&self) -> aidoku::Result<String> {
 		let mut url = String::from("https://www.bomtoon.tw");
 		match *self {
+			Self::Base => url.push('/'),
 			Self::Session => url.push_str("/api/auth/session"),
 			Self::Search { r#type, .. } => {
 				let query = QueryParameters::from_data(self)?;
@@ -83,7 +95,14 @@ impl Url<'_> {
 				)
 				.map_err(AidokuError::message)?;
 			}
-			Self::Manga { key } => write!(url, "/detail/{key}").map_err(AidokuError::message)?,
+			Self::MangaPage { key } => {
+				write!(url, "/detail/{key}").map_err(AidokuError::message)?;
+			}
+			Self::Manga { key, .. } => {
+				let query = QueryParameters::from_data(self)?;
+				write!(url, "/api/balcony-api-v2/contents/{key}?{query}")
+					.map_err(AidokuError::message)?;
+			}
 		}
 		Ok(url)
 	}
@@ -92,8 +111,24 @@ impl Url<'_> {
 		let url = self.to_string()?;
 		let mut request = Request::get(url)?;
 
-		if self.is_search() || self.is_ranking() {
+		if self.is_search() || self.is_ranking() || self.is_manga() {
 			request.set_header("x-balcony-id", "BOMTOON_TW");
+		}
+
+		if self.is_manga() && defaults_get::<String>("login").is_some() {
+			let token = defaults_get::<AccessToken>("accessToken")
+				.ok_or_else(|| {
+					error!("default not found or not `AccessToken` for key: `accessToken`")
+				})?
+				.token()?;
+			#[expect(
+				clippy::unwrap_used,
+				clippy::unwrap_in_result,
+				reason = "smaller than capacity"
+			)]
+			let mut bearer = ArrayString::<535>::from("Bearer ").unwrap();
+			bearer.push_str(&token);
+			request.set_header("Authorization", &bearer);
 		}
 
 		Ok(request)
@@ -101,6 +136,14 @@ impl Url<'_> {
 }
 
 impl<'a> Url<'a> {
+	pub const fn manga(key: &'a str) -> Self {
+		Self::Manga {
+			key,
+			is_not_login_adult: false,
+			is_porch: false,
+		}
+	}
+
 	pub fn search(
 		r#type: search::Type,
 		search_text: &'a str,
@@ -143,15 +186,20 @@ impl<'a> Url<'a> {
 	}
 }
 
-#[derive(AsRefStr, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(AsRefStr, PartialEq, Eq, PartialOrd, Ord, Deserialize, EnumIs)]
 #[strum(serialize_all = "SCREAMING_SNAKE_CASE")]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ThumbnailType {
 	Vertical,
-	// Main,
-	// Square,
-	// Detail,
-	// HorizontalTypeA,
-	// DetailNonAdult,
+	Main,
+	Square,
+	Detail,
+	HorizontalTypeA,
+	DetailNonAdult,
+	Cover,
+	HorizontalTypeB,
+	HorizontalTypeC,
+	MainNonAdult,
 }
 
 fn comma_join<T: AsRef<str>, S: Serializer>(

@@ -8,12 +8,14 @@ use {
 		AidokuError, Chapter, FilterValue, HashMap, Manga, MangaPageResult, Page, Result, Source,
 		WebLoginHandler,
 		alloc::{String, Vec, format},
-		bail, register_source,
+		bail,
+		imports::std::send_partial_result,
+		register_source,
 	},
 	arrayvec::ArrayString,
 	core::cell::Cell,
 	net::Url,
-	response::{Ranking, Search, Session},
+	response::{Ranking, Search, Session, UpdateManga as _},
 };
 
 struct Bomtoon {
@@ -123,10 +125,22 @@ impl Source for Bomtoon {
 
 	fn get_manga_update(
 		&self,
-		manga: Manga,
+		mut manga: Manga,
 		needs_details: bool,
 		needs_chapters: bool,
 	) -> Result<Manga> {
+		if needs_details {
+			let mut res = Url::manga(&manga.key).request()?.send()?;
+			let updated_manga = res.get_json::<response::Manga>()?;
+			manga.update_details(&updated_manga);
+
+			if needs_chapters {
+				send_partial_result(&manga);
+			} else {
+				return Ok(manga);
+			}
+		}
+
 		todo!()
 	}
 
