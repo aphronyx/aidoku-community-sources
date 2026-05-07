@@ -74,6 +74,10 @@ pub enum Url<'a> {
 		is_not_login_adult: bool,
 		is_porch: bool,
 	},
+	Chapter {
+		manga_key: &'a str,
+		key: &'a str,
+	},
 }
 
 impl Url<'_> {
@@ -102,6 +106,9 @@ impl Url<'_> {
 				let query = QueryParameters::from_data(self)?;
 				write!(url, "/api/balcony-api-v2/contents/{key}?{query}")
 					.map_err(AidokuError::message)?;
+			}
+			Self::Chapter { manga_key, key } => {
+				write!(url, "/viewer/{manga_key}/{key}").map_err(AidokuError::message)?;
 			}
 		}
 		Ok(url)

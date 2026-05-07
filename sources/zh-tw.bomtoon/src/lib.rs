@@ -129,9 +129,9 @@ impl Source for Bomtoon {
 		needs_details: bool,
 		needs_chapters: bool,
 	) -> Result<Manga> {
+		let mut res = Url::manga(&manga.key).request()?.send()?;
+		let updated_manga = res.get_json::<response::Manga>()?;
 		if needs_details {
-			let mut res = Url::manga(&manga.key).request()?.send()?;
-			let updated_manga = res.get_json::<response::Manga>()?;
 			manga.update_details(&updated_manga);
 
 			if needs_chapters {
@@ -141,7 +141,8 @@ impl Source for Bomtoon {
 			}
 		}
 
-		todo!()
+		manga.update_chapters(&updated_manga);
+		Ok(manga)
 	}
 
 	fn get_page_list(&self, manga: Manga, chapter: Chapter) -> Result<Vec<Page>> {
