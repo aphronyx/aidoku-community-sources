@@ -42,13 +42,20 @@ impl Source for Bomtoon {
 		let next_pagination = (index != 0).then(|| self.next_pagination.get());
 		#[expect(clippy::shadow_reuse, reason = "guarded")]
 		let url = if let Some(query) = query.as_deref() {
-			use net::search::{SortBy, Type};
+			use net::search::{Method, SortBy, Type};
 
 			let (r#type, search_text) = query
 				.strip_prefix('#')
 				.map_or((Type::All, query), |tag| (Type::Tag, tag));
 
-			Url::search(r#type, search_text, index, next_pagination, SortBy::Popular)
+			Url::search(
+				r#type,
+				search_text,
+				index,
+				next_pagination,
+				Method::Input,
+				SortBy::Popular,
+			)
 		} else {
 			Url::from_filters(&filters, index, next_pagination)?
 		};
