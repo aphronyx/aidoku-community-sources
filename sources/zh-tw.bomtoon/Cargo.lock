@@ -58,6 +58,7 @@ dependencies = [
  "chinese-number",
  "itoa",
  "serde",
+ "serde_json",
  "strum",
 ]
 

@@ -1,4 +1,5 @@
 use {
+	super::NextData as _,
 	crate::net::Url,
 	aidoku::{
 		imports::{defaults::defaults_set_data, std::current_date},
@@ -35,7 +36,9 @@ impl AccessToken {
 			return Ok(self.token);
 		}
 
-		Url::Base.request()?.send()?;
+		let build_id = Url::Base.request()?.html()?.next_data()?.build_id();
+		defaults_set_data("buildId", build_id);
+
 		let session = Url::Session.request()?.json_owned::<Root>()?;
 		session.refresh_access_token();
 		Ok(session.user.access_token.token)
