@@ -15,7 +15,7 @@ use {
 	arrayvec::ArrayString,
 	core::cell::Cell,
 	net::Url,
-	response::{Ranking, Search, Session, UpdateManga as _},
+	response::{NextData as _, Ranking, Search, Session, UpdateManga as _},
 };
 
 struct Bomtoon {
@@ -94,7 +94,17 @@ impl Source for Bomtoon {
 	}
 
 	fn get_page_list(&self, manga: Manga, chapter: Chapter) -> Result<Vec<Page>> {
-		todo!()
+		let url = Url::Chapter {
+			alias: &manga.key,
+			ep_alias: &chapter.key,
+		};
+		let mut res = url.request()?.send()?;
+		if res.status_code() == 404 {
+			res.get_html()?.next_data()?.update_build_id();
+			res = url.request()?.send()?;
+		}
+		let pages = res.get_json::<response::Chapter>()?.pages()?;
+		Ok(pages)
 	}
 }
 

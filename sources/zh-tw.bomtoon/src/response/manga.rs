@@ -229,7 +229,7 @@ impl Episode<'_> {
 		#[expect(clippy::integer_division, reason = "should be an integer in seconds")]
 		let date_uploaded = (self.opened_at / 1_000).try_into().ok();
 
-		let url = Url::Chapter {
+		let url = Url::ChapterPage {
 			manga_key,
 			key: self.alias,
 		}

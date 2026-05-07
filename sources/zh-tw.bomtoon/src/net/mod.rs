@@ -2,13 +2,16 @@ pub mod ranking;
 pub mod search;
 
 use {
-	crate::response::AccessToken,
+	crate::response::{AccessToken, NextData as _},
 	aidoku::{
 		AidokuError, FilterValue,
 		alloc::{String, Vec, collections::BTreeSet, fmt::Write as _},
 		bail, error,
 		helpers::uri::QueryParameters,
-		imports::{defaults::defaults_get, net::Request},
+		imports::{
+			defaults::{defaults_get, defaults_set_data},
+			net::Request,
+		},
 		serde::{Deserialize, Serialize, Serializer},
 	},
 	arrayvec::ArrayString,
@@ -74,9 +77,14 @@ pub enum Url<'a> {
 		is_not_login_adult: bool,
 		is_porch: bool,
 	},
-	Chapter {
+	ChapterPage {
 		manga_key: &'a str,
 		key: &'a str,
+	},
+	#[serde(rename_all = "camelCase")]
+	Chapter {
+		alias: &'a str,
+		ep_alias: &'a str,
 	},
 }
 
@@ -107,8 +115,23 @@ impl Url<'_> {
 				write!(url, "/api/balcony-api-v2/contents/{key}?{query}")
 					.map_err(AidokuError::message)?;
 			}
-			Self::Chapter { manga_key, key } => {
+			Self::ChapterPage { manga_key, key } => {
 				write!(url, "/viewer/{manga_key}/{key}").map_err(AidokuError::message)?;
+			}
+			Self::Chapter { alias, ep_alias } => {
+				let build_id = if let Some(build_id) = defaults_get::<ArrayString<21>>("buildId") {
+					build_id
+				} else {
+					let build_id = Url::Base.request()?.html()?.next_data()?.build_id();
+					defaults_set_data("buildId", build_id);
+					build_id
+				};
+				let query = QueryParameters::from_data(self)?;
+				write!(
+					url,
+					"/_next/data/{build_id}/viewer/{alias}/{ep_alias}.json?{query}"
+				)
+				.map_err(AidokuError::message)?;
 			}
 		}
 		Ok(url)

@@ -12,6 +12,7 @@ arrayvec = { version = "0.7.8", default-features = false, features = ["serde"] }
 chinese-number = { version = "0.8.2", default-features = false, features = ["number-to-chinese"] }
 itoa = "1.0.18"
 serde = { version = "1.0.229", default-features = false }
+serde_json = { version = "1.0.151", default-features = false }
 strum = { version = "0.28.0", default-features = false, features = ["derive"] }
 
 [profile.dev]
