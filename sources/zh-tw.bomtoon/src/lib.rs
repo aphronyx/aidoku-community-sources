@@ -5,8 +5,8 @@ mod response;
 
 use {
 	aidoku::{
-		AidokuError, Chapter, FilterValue, HashMap, Manga, MangaPageResult, Page, Result, Source,
-		WebLoginHandler,
+		AidokuError, AlternateCoverProvider, Chapter, FilterValue, HashMap, Manga, MangaPageResult,
+		Page, Result, Source, WebLoginHandler,
 		alloc::{String, Vec, format},
 		bail,
 		imports::std::send_partial_result,
@@ -150,6 +150,17 @@ impl Source for Bomtoon {
 	}
 }
 
+impl AlternateCoverProvider for Bomtoon {
+	fn get_alternate_covers(&self, manga: Manga) -> Result<Vec<String>> {
+		let covers = Url::manga(&manga.key)
+			.request()?
+			.send()?
+			.get_json::<response::Manga>()?
+			.covers();
+		Ok(covers)
+	}
+}
+
 impl WebLoginHandler for Bomtoon {
 	fn handle_web_login(&self, key: String, cookies: HashMap<String, String>) -> Result<bool> {
 		if key != "login" {
@@ -170,4 +181,4 @@ impl WebLoginHandler for Bomtoon {
 	}
 }
 
-register_source!(Bomtoon, WebLoginHandler);
+register_source!(Bomtoon, AlternateCoverProvider, WebLoginHandler);

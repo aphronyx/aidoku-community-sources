@@ -23,6 +23,16 @@ pub struct Root<'a> {
 	data: Data<'a>,
 }
 
+impl Root<'_> {
+	pub fn covers(&self) -> Vec<String> {
+		self.data
+			.thumbnails
+			.iter()
+			.map(|thumbnail| thumbnail.image_path.into())
+			.collect()
+	}
+}
+
 pub trait UpdateManga {
 	fn update_details(&mut self, updated_manga: &Root);
 	fn update_chapters(&mut self, updated_manga: &Root);
