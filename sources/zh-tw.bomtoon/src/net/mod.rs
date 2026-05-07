@@ -156,6 +156,7 @@ impl<'a> Url<'a> {
 		search_text: &'a str,
 		page: u8,
 		next_pagination: Option<ArrayString<31>>,
+		search_method: search::Method,
 		sort: search::SortBy,
 	) -> Self {
 		Self::Search {
@@ -167,7 +168,7 @@ impl<'a> Url<'a> {
 			next_pagination,
 			is_check_device: true,
 			contents_thumbnail_type: BTreeSet::from_iter([ThumbnailType::Vertical]),
-			search_method: search::Method::Input,
+			search_method,
 			sort,
 		}
 	}
@@ -185,6 +186,7 @@ impl<'a> Url<'a> {
 		let mut genres_internal_name = None;
 
 		for filter in filters {
+			#[expect(clippy::match_wildcard_for_single_variants, reason = "intended")]
 			match *filter {
 				FilterValue::Text { ref id, ref value } => match id.as_str() {
 					"author" => {
@@ -193,6 +195,7 @@ impl<'a> Url<'a> {
 							value,
 							page,
 							next_pagination,
+							search::Method::Input,
 							search::SortBy::Popular,
 						));
 					}
@@ -205,6 +208,19 @@ impl<'a> Url<'a> {
 				FilterValue::Check { ref id, value } => match id.as_str() {
 					"WorldDrop" => is_global_release = value == 1,
 					_ => bail!("invalid check filter id: `{id}`"),
+				},
+				FilterValue::Select { ref id, ref value } => match id.as_str() {
+					"genre" => {
+						return Ok(Self::search(
+							search::Type::Tag,
+							value,
+							page,
+							next_pagination,
+							search::Method::Click,
+							search::SortBy::Popular,
+						));
+					}
+					_ => bail!("invalid select filter id: `{id}`"),
 				},
 				FilterValue::MultiSelect {
 					ref id,

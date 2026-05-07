@@ -11,6 +11,7 @@ pub enum Type {
 #[serde(rename_all = "lowercase")]
 pub enum Method {
 	Input,
+	Click,
 }
 
 #[derive(Serialize)]
