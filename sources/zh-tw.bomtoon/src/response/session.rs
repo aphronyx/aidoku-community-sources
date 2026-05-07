@@ -36,9 +36,7 @@ impl AccessToken {
 			return Ok(self.token);
 		}
 
-		let build_id = Url::Base.request()?.html()?.next_data()?.build_id();
-		defaults_set_data("buildId", build_id);
-
+		Url::Base.request()?.html()?.next_data()?.update_build_id();
 		let session = Url::Session.request()?.json_owned::<Root>()?;
 		session.refresh_access_token();
 		Ok(session.user.access_token.token)

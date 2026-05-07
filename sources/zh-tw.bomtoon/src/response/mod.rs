@@ -1,6 +1,5 @@
 #![expect(clippy::pub_use, reason = "cleaner")]
 
-mod chapter;
 mod manga;
 mod next_data;
 mod ranking;
@@ -8,9 +7,8 @@ mod search;
 mod session;
 
 pub use {
-	chapter::Root as Chapter,
 	manga::{Root as Manga, UpdateManga},
-	next_data::NextData,
+	next_data::{NextData, Props},
 	ranking::Root as Ranking,
 	search::Root as Search,
 	session::{AccessToken, Root as Session},

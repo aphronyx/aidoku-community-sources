@@ -2,28 +2,20 @@ use aidoku::{Page, PageContent, alloc::Vec, serde::Deserialize};
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Root<'a> {
+pub struct PageProps<'a> {
 	#[serde(borrow)]
-	page_props: PageProps<'a>,
+	episode_data: EpisodeData<'a>,
 }
 
-impl Root<'_> {
+impl PageProps<'_> {
 	pub fn pages(&self) -> Vec<Page> {
-		self.page_props
-			.episode_data
+		self.episode_data
 			.result
 			.images
 			.iter()
 			.map(Image::to_page)
 			.collect()
 	}
-}
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct PageProps<'a> {
-	#[serde(borrow)]
-	episode_data: EpisodeData<'a>,
 }
 
 #[derive(Deserialize)]
