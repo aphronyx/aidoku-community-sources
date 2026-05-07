@@ -4,9 +4,9 @@ pub mod search;
 use {
 	crate::response::AccessToken,
 	aidoku::{
-		AidokuError,
+		AidokuError, FilterValue,
 		alloc::{String, Vec, collections::BTreeSet, fmt::Write as _},
-		error,
+		bail, error,
 		helpers::uri::QueryParameters,
 		imports::{defaults::defaults_get, net::Request},
 		serde::{Deserialize, Serialize, Serializer},
@@ -172,7 +172,82 @@ impl<'a> Url<'a> {
 		}
 	}
 
-	pub fn ranking(
+	pub fn from_filters(
+		filters: &'a [FilterValue],
+		page: u8,
+		next_pagination: Option<ArrayString<31>>,
+	) -> aidoku::Result<Self> {
+		let mut ranking_type = ranking::Type::default();
+		let mut is_global_release = false;
+		let mut badge_complete = None;
+		let mut contents_free_filter = None;
+		let mut genres = None;
+		let mut genres_internal_name = None;
+
+		for filter in filters {
+			match *filter {
+				FilterValue::Text { ref id, ref value } => match id.as_str() {
+					"author" => {
+						return Ok(Self::search(
+							search::Type::All,
+							value,
+							page,
+							next_pagination,
+							search::SortBy::Popular,
+						));
+					}
+					_ => bail!("invalid text filter id: `{id}`"),
+				},
+				FilterValue::Sort { ref id, index, .. } => match id.as_str() {
+					"排行" => ranking_type = ranking::Type::from_repr(index).unwrap_or_default(),
+					_ => bail!("invalid sort filter id: `{id}`"),
+				},
+				FilterValue::Check { ref id, value } => match id.as_str() {
+					"WorldDrop" => is_global_release = value == 1,
+					_ => bail!("invalid check filter id: `{id}`"),
+				},
+				FilterValue::MultiSelect {
+					ref id,
+					ref included,
+					..
+				} => match id.as_str() {
+					"類型" => {
+						let (ids, names) = included
+							.iter()
+							.filter_map(|genre| genre.split_once('|'))
+							.unzip();
+						genres = Some(ids);
+						genres_internal_name = Some(names);
+					}
+					"進度" => {
+						badge_complete =
+							match included.iter().map(AsRef::as_ref).collect::<Vec<_>>()[..] {
+								["完結"] => Some(true),
+								["連載"] => Some(false),
+								_ => None,
+							}
+					}
+					"優惠" => {
+						let types = included.iter().map(AsRef::as_ref).collect();
+						contents_free_filter = Some(types);
+					}
+					_ => bail!("invalid multi-select filter id: `{id}`"),
+				},
+				_ => bail!("invalid filter: `{filter:?}`"),
+			}
+		}
+
+		Ok(Self::ranking(
+			ranking_type,
+			is_global_release,
+			badge_complete,
+			contents_free_filter,
+			genres,
+			genres_internal_name,
+		))
+	}
+
+	fn ranking(
 		ranking_type: ranking::Type,
 		is_global_release: bool,
 		badge_complete: Option<bool>,
