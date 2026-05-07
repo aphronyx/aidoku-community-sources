@@ -1,7 +1,7 @@
 use {
-	super::MangaItem,
+	super::{MangaItem, Tags as _},
 	aidoku::{
-		ContentRating, Manga, MangaPageResult, MangaStatus, Viewer,
+		ContentRating, Manga, MangaPageResult, MangaStatus,
 		alloc::{Vec, borrow::Cow},
 		serde::Deserialize,
 	},
@@ -70,11 +70,7 @@ impl Content<'_> {
 			ContentRating::NSFW
 		};
 
-		manga.viewer = if tags.iter().any(|tag| tag == "翻頁式漫畫") {
-			Viewer::Unknown
-		} else {
-			Viewer::Webtoon
-		};
+		manga.viewer = tags.get_viewer();
 
 		manga.tags = Some(tags);
 
