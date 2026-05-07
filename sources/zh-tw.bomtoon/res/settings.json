@@ -13,5 +13,17 @@
 				"clearCookiesOnLogOut": true
 			}
 		]
+	},
+	{
+		"type": "group",
+		"title": "章節顯示方式",
+		"items": [
+			{
+				"type": "switch",
+				"key": "hidesPreview",
+				"title": "隱藏「非會員試閱」",
+				"default": false
+			}
+		]
 	}
 ]

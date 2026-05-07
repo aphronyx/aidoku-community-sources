@@ -90,10 +90,12 @@ impl UpdateManga for Manga {
 	}
 
 	fn update_chapters(&mut self, updated_manga: &Root) {
+		let hides_preview = defaults_get::<bool>("hidesPreview").unwrap_or_default();
 		let chapters = updated_manga
 			.data
 			.episodes
 			.iter()
+			.filter(|episode| !hides_preview || episode.alias != "f1")
 			.map(|episode| episode.to_chapter(updated_manga.data.alias))
 			.rev()
 			.collect();
