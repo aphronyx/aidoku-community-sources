@@ -6,7 +6,7 @@ mod response;
 use {
 	aidoku::{
 		AidokuError, AlternateCoverProvider, Chapter, DeepLinkHandler, DeepLinkResult, FilterValue,
-		HashMap, Manga, MangaPageResult, Page, Result, Source, WebLoginHandler,
+		HashMap, Home, HomeLayout, Manga, MangaPageResult, Page, Result, Source, WebLoginHandler,
 		alloc::{String, Vec, format},
 		bail,
 		imports::std::send_partial_result,
@@ -15,7 +15,7 @@ use {
 	arrayvec::ArrayString,
 	core::cell::Cell,
 	net::Url,
-	response::{NextData as _, Ranking, Search, Session, UpdateManga as _},
+	response::{NextData as _, Props, Ranking, Search, Session, UpdateManga as _},
 };
 
 struct Bomtoon {
@@ -103,8 +103,7 @@ impl Source for Bomtoon {
 			res.get_html()?.next_data()?.update_build_id();
 			res = url.request()?.send()?;
 		}
-		let pages = res.get_json::<response::Chapter>()?.pages()?;
-		Ok(pages)
+		res.get_json::<Props>()?.pages()
 	}
 }
 
@@ -134,6 +133,18 @@ impl DeepLinkHandler for Bomtoon {
 	}
 }
 
+impl Home for Bomtoon {
+	fn get_home(&self) -> Result<HomeLayout> {
+		let url = Url::main();
+		let mut res = url.request()?.send()?;
+		if res.status_code() == 404 {
+			res.get_html()?.next_data()?.update_build_id();
+			res = url.request()?.send()?;
+		}
+		res.get_json::<Props>()?.home_layout()
+	}
+}
+
 impl WebLoginHandler for Bomtoon {
 	fn handle_web_login(&self, key: String, cookies: HashMap<String, String>) -> Result<bool> {
 		if key != "login" {
@@ -158,5 +169,6 @@ register_source!(
 	Bomtoon,
 	AlternateCoverProvider,
 	DeepLinkHandler,
+	Home,
 	WebLoginHandler
 );

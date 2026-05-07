@@ -1,3 +1,5 @@
+#![expect(clippy::min_ident_chars, reason = "query key")]
+
 pub mod ranking;
 pub mod search;
 
@@ -86,9 +88,26 @@ pub enum Url<'a> {
 		alias: &'a str,
 		ep_alias: &'a str,
 	},
+	Main {
+		platform: &'static str,
+		key: &'static str,
+		t: &'static str,
+	},
+	Event(&'a str),
+	Shop,
+	Play,
+	Pick,
 }
 
 impl Url<'_> {
+	pub const fn main() -> Self {
+		Self::Main {
+			platform: "bom",
+			key: "comic",
+			t: "main",
+		}
+	}
+
 	pub fn to_string(&self) -> aidoku::Result<String> {
 		let mut url = String::from("https://www.bomtoon.tw");
 		match *self {
@@ -119,13 +138,7 @@ impl Url<'_> {
 				write!(url, "/viewer/{manga_key}/{key}").map_err(AidokuError::message)?;
 			}
 			Self::Chapter { alias, ep_alias } => {
-				let build_id = if let Some(build_id) = defaults_get::<ArrayString<21>>("buildId") {
-					build_id
-				} else {
-					let build_id = Url::Base.request()?.html()?.next_data()?.build_id();
-					defaults_set_data("buildId", build_id);
-					build_id
-				};
+				let build_id = build_id()?;
 				let query = QueryParameters::from_data(self)?;
 				write!(
 					url,
@@ -133,6 +146,19 @@ impl Url<'_> {
 				)
 				.map_err(AidokuError::message)?;
 			}
+			Self::Main { .. } => {
+				let build_id = build_id()?;
+				let query = QueryParameters::from_data(self)?;
+				write!(
+					url,
+					"/_next/data/{build_id}/main/bom/comic/main.json?{query}"
+				)
+				.map_err(AidokuError::message)?;
+			}
+			Self::Event(event) => write!(url, "/event/{event}").map_err(AidokuError::message)?,
+			Self::Shop => url.push_str("/shop"),
+			Self::Play => url.push_str("/play"),
+			Self::Pick => url.push_str("/comic/pick"),
 		}
 		Ok(url)
 	}
@@ -345,4 +371,15 @@ fn option_comma_join<T: AsRef<str>, S: Serializer>(
 		return serializer.serialize_none();
 	};
 	comma_join(items, serializer)
+}
+
+fn build_id() -> Result<ArrayString<21>, AidokuError> {
+	let build_id = if let Some(build_id) = defaults_get::<ArrayString<21>>("buildId") {
+		build_id
+	} else {
+		let build_id = Url::Base.request()?.html()?.next_data()?.build_id();
+		defaults_set_data("buildId", build_id);
+		build_id
+	};
+	Ok(build_id)
 }

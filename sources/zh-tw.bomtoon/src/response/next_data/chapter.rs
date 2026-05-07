@@ -7,15 +7,14 @@ use aidoku::{
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Root<'a> {
+pub struct PageProps<'a> {
 	#[serde(borrow)]
-	page_props: PageProps<'a>,
+	episode_data: EpisodeData<'a>,
 }
 
-impl Root<'_> {
+impl PageProps<'_> {
 	pub fn pages(&self) -> Result<Vec<Page>, RequestError> {
 		let requests = self
-			.page_props
 			.episode_data
 			.result
 			.images
@@ -33,13 +32,6 @@ impl Root<'_> {
 			})
 			.collect()
 	}
-}
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct PageProps<'a> {
-	#[serde(borrow)]
-	episode_data: EpisodeData<'a>,
 }
 
 #[derive(Deserialize)]
