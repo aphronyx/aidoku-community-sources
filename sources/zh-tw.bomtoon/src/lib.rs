@@ -5,8 +5,8 @@ mod response;
 
 use {
 	aidoku::{
-		AidokuError, AlternateCoverProvider, Chapter, FilterValue, HashMap, Manga, MangaPageResult,
-		Page, Result, Source, WebLoginHandler,
+		AidokuError, AlternateCoverProvider, Chapter, DeepLinkHandler, DeepLinkResult, FilterValue,
+		HashMap, Manga, MangaPageResult, Page, Result, Source, WebLoginHandler,
 		alloc::{String, Vec, format},
 		bail,
 		imports::std::send_partial_result,
@@ -109,6 +109,21 @@ impl AlternateCoverProvider for Bomtoon {
 	}
 }
 
+impl DeepLinkHandler for Bomtoon {
+	fn handle_deep_link(&self, url: String) -> Result<Option<DeepLinkResult>> {
+		let mut path = url.split('/').skip(3);
+		let result = match (path.next(), path.next(), path.next()) {
+			(Some("detail"), Some(key), None) => Some(DeepLinkResult::Manga { key: key.into() }),
+			(Some("viewer"), Some(manga_key), Some(key)) => Some(DeepLinkResult::Chapter {
+				manga_key: manga_key.into(),
+				key: key.into(),
+			}),
+			_ => None,
+		};
+		Ok(result)
+	}
+}
+
 impl WebLoginHandler for Bomtoon {
 	fn handle_web_login(&self, key: String, cookies: HashMap<String, String>) -> Result<bool> {
 		if key != "login" {
@@ -129,4 +144,9 @@ impl WebLoginHandler for Bomtoon {
 	}
 }
 
-register_source!(Bomtoon, AlternateCoverProvider, WebLoginHandler);
+register_source!(
+	Bomtoon,
+	AlternateCoverProvider,
+	DeepLinkHandler,
+	WebLoginHandler
+);
