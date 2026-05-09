@@ -1,0 +1,17 @@
+{
+  "name": "Source List",
+  "sources": [
+    {
+      "id": "zh-tw.bomtoon",
+      "name": "BOMTOON",
+      "version": 1,
+      "iconURL": "icons/zh-tw.bomtoon-v1.png",
+      "downloadURL": "sources/zh-tw.bomtoon-v1.aix",
+      "languages": [
+        "zh-TW"
+      ],
+      "contentRating": 2,
+      "baseURL": "https://www.bomtoon.tw"
+    }
+  ]
+}

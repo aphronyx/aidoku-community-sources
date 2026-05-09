@@ -15,3 +15,5 @@ templates/*/target
 .zed
 .ropeproject
 /target
+
+!sources/zh-tw.bomtoon/public
