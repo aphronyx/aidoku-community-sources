@@ -1,5 +1,6 @@
 #![expect(clippy::min_ident_chars, reason = "query key")]
 
+pub mod free;
 pub mod ranking;
 pub mod search;
 
@@ -97,6 +98,12 @@ pub enum Url<'a> {
 	Shop,
 	Play,
 	Pick,
+	EventPage,
+	Free {
+		f: Option<free::Type>,
+	},
+	Gift,
+	Short,
 }
 
 impl Url<'_> {
@@ -159,6 +166,16 @@ impl Url<'_> {
 			Self::Shop => url.push_str("/shop"),
 			Self::Play => url.push_str("/play"),
 			Self::Pick => url.push_str("/comic/pick"),
+			Self::EventPage => url.push_str("/play/event"),
+			Self::Free { f } => {
+				url.push_str("/comic/free");
+				if f.is_some() {
+					let query = QueryParameters::from_data(self)?;
+					write!(url, "?{query}").map_err(AidokuError::message)?;
+				}
+			}
+			Self::Gift => url.push_str("/gift"),
+			Self::Short => url.push_str("/comic/short"),
 		}
 		Ok(url)
 	}
