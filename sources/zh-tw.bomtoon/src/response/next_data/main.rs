@@ -1,4 +1,5 @@
 use {
+	super::super::MangaItem,
 	crate::net::{Url, free},
 	aidoku::{
 		HomeComponent, HomeComponentValue, Link, LinkValue, Manga, alloc::Vec, serde::Deserialize,
@@ -12,10 +13,11 @@ pub struct PageProps<'a> {
 }
 
 impl PageProps<'_> {
-	pub fn home_components(&self) -> [HomeComponent; 2] {
+	pub fn home_components(&self) -> [HomeComponent; 3] {
 		[
 			self.main.get_banners_home_component(),
 			self.main.get_quick_menu_home_component(),
+			self.main.get_newest_home_component(),
 		]
 	}
 }
@@ -50,6 +52,7 @@ struct Main<'a> {
 	#[serde(borrow)]
 	banners: Vec<Banner<'a>>,
 	quick_menu: [QuickMenuItem<'a>; 8],
+	newest: Vec<MangaItem<'a>>,
 }
 
 impl Main<'_> {
@@ -75,6 +78,21 @@ impl Main<'_> {
 		let links = self.quick_menu.iter().map(QuickMenuItem::to_link).collect();
 		let value = HomeComponentValue::Links(links);
 		HomeComponent {
+			value,
+			..Default::default()
+		}
+	}
+
+	fn get_newest_home_component(&self) -> HomeComponent {
+		let links = self.newest.iter().filter_map(MangaItem::to_link).collect();
+		let value = HomeComponentValue::ImageScroller {
+			links,
+			auto_scroll_interval: None,
+			width: None,
+			height: Some(224),
+		};
+		HomeComponent {
+			title: Some("熱騰騰人氣新作!".into()),
 			value,
 			..Default::default()
 		}

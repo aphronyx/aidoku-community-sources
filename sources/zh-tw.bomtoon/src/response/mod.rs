@@ -17,7 +17,7 @@ pub use {
 use {
 	crate::net::{ThumbnailType, Url},
 	aidoku::{
-		Viewer,
+		Link, LinkValue, Viewer,
 		alloc::{String, Vec},
 		serde::Deserialize,
 	},
@@ -27,7 +27,7 @@ use {
 struct MangaItem<'a> {
 	alias: &'a str,
 	title: &'a str,
-	thumbnails: [Thumbnail<'a>; 1],
+	thumbnails: Vec<Thumbnail<'a>>,
 	creators: &'a str,
 }
 
@@ -37,7 +37,10 @@ impl MangaItem<'_> {
 
 		let title = self.title.into();
 
-		let cover = self.thumbnails[0].image_path.into();
+		let cover = self
+			.thumbnails
+			.first()
+			.map(|thumbnail| thumbnail.image_path.into());
 
 		let authors = self
 			.creators
@@ -50,11 +53,23 @@ impl MangaItem<'_> {
 		aidoku::Manga {
 			key,
 			title,
-			cover: Some(cover),
+			cover,
 			authors: Some(authors),
 			url,
 			..Default::default()
 		}
+	}
+
+	fn to_link(&self) -> Option<Link> {
+		let image_url = self.thumbnails.first()?.image_path.into();
+
+		let value = LinkValue::Manga(self.to_manga());
+
+		Some(Link {
+			image_url: Some(image_url),
+			value: Some(value),
+			..Default::default()
+		})
 	}
 }
 
