@@ -1,5 +1,5 @@
 use {
-	crate::net::Url,
+	crate::net::{Url, free},
 	aidoku::{
 		HomeComponent, HomeComponentValue, Link, LinkValue, Manga, alloc::Vec, serde::Deserialize,
 	},
@@ -12,8 +12,11 @@ pub struct PageProps<'a> {
 }
 
 impl PageProps<'_> {
-	pub fn home_components(&self) -> [HomeComponent; 1] {
-		[self.main.get_banners_home_component()]
+	pub fn home_components(&self) -> [HomeComponent; 2] {
+		[
+			self.main.get_banners_home_component(),
+			self.main.get_quick_menu_home_component(),
+		]
 	}
 }
 
@@ -30,9 +33,23 @@ enum Target {
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+enum UrlTarget {
+	Event,
+	EventUrl,
+	FreetimeComic,
+	Gift,
+	Shop,
+	ShortComic,
+	Url,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct Main<'a> {
 	#[serde(borrow)]
 	banners: Vec<Banner<'a>>,
+	quick_menu: [QuickMenuItem<'a>; 8],
 }
 
 impl Main<'_> {
@@ -48,6 +65,15 @@ impl Main<'_> {
 			width: None,
 			height: Some(330),
 		};
+		HomeComponent {
+			value,
+			..Default::default()
+		}
+	}
+
+	fn get_quick_menu_home_component(&self) -> HomeComponent {
+		let links = self.quick_menu.iter().map(QuickMenuItem::to_link).collect();
+		let value = HomeComponentValue::Links(links);
 		HomeComponent {
 			value,
 			..Default::default()
@@ -119,4 +145,39 @@ impl LinkInfo<'_> {
 struct Thumbnail<'a> {
 	image_path: &'a str,
 	is_adult: bool,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct QuickMenuItem<'a> {
+	title: &'a str,
+	url_target: UrlTarget,
+	url: &'a str,
+}
+
+impl QuickMenuItem<'_> {
+	fn to_link(&self) -> Link {
+		let title = self.title.into();
+
+		let value = match self.url_target {
+			UrlTarget::Event => Url::EventPage.to_string().map(LinkValue::Url).ok(),
+			UrlTarget::EventUrl => Url::Event(self.url).to_string().map(LinkValue::Url).ok(),
+			UrlTarget::FreetimeComic => Url::Free {
+				f: Some(free::Type::Freetime),
+			}
+			.to_string()
+			.map(LinkValue::Url)
+			.ok(),
+			UrlTarget::Gift => Url::Gift.to_string().map(LinkValue::Url).ok(),
+			UrlTarget::Shop => Url::Shop.to_string().map(LinkValue::Url).ok(),
+			UrlTarget::ShortComic => Url::Short.to_string().map(LinkValue::Url).ok(),
+			UrlTarget::Url => Some(LinkValue::Url(self.url.into())),
+		};
+
+		Link {
+			title,
+			value,
+			..Default::default()
+		}
+	}
 }
